@@ -1,0 +1,975 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视频检测 - 社区垃圾与火情识别预警系统</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; }
+
+.gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes progress {
+  from { width: 0%; }
+  to { width: var(--progress); }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.upload-zone {
+  border: 2px dashed #d1d5db;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  transform: scale(1.01);
+}
+
+.result-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.result-item:hover {
+  transform: translateX(8px);
+}
+
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #10b981;
+  transition: all 0.3s;
+  transform: translateX(-50%);
+}
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  animation: scanLine 2s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+  0%, 100% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2"><span class="text-xl font-bold">社区垃圾与火情<span class="gradient-text">识别预警系统</span></span></a>
+    
+    <div class="flex items-center gap-1">
+      <a href="/" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">首页</a>
+      <a href="/detection" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">智慧检测</a>
+      <a href="/alerts" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">预警记录</a>
+      <a href="/statistics" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据统计</a>
+      <a href="/dataset" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据集</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="pt-24 pb-16 cyber-grid min-h-screen">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Header -->
+    <div class="text-center mb-10 fade-in">
+      <h1 class="text-4xl font-bold text-gray-800 mb-3">视频智能检测</h1>
+      <p class="text-gray-500 text-lg">上传视频文件，AI 将逐帧分析垃圾分类情况</p>
+    </div>
+    
+    <div class="grid lg:grid-cols-3 gap-8">
+      <!-- Left - Upload & Video -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <!-- Video Preview Area -->
+          <div class="relative aspect-video bg-gray-900">
+            <!-- Initial State -->
+            <div id="video-placeholder" class="absolute inset-0 flex items-center justify-center">
+              <div class="text-center">
+                <div class="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6">
+                  <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <p class="text-gray-500">点击下方上传视频开始检测</p>
+              </div>
+            </div>
+            
+            <!-- Video Player -->
+            <video id="video-player" class="w-full h-full object-contain hidden" controls></video>
+            
+            <!-- Processing Overlay -->
+            <div id="video-processing" class="absolute inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center">
+              <div class="text-center">
+                <div class="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full spinner mx-auto mb-4"></div>
+                <p class="text-white font-semibold mb-2">正在处理视频...</p>
+                <p class="text-gray-400 text-sm" id="processing-text">准备...</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upload Section -->
+          <div class="p-6 border-t border-gray-100">
+            <div id="upload-zone" class="upload-zone rounded-2xl p-8 text-center cursor-pointer" onclick="document.getElementById('video-input').click()">
+              <input type="file" id="video-input" accept="video/*" class="hidden" onchange="handleVideoSelect(event)">
+              
+              <div id="upload-placeholder">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">拖拽视频到这里</h3>
+                <p class="text-gray-500 mb-2">或点击选择文件上传</p>
+                <p class="text-sm text-gray-400">支持 MP4、AVI、MOV 格式，最大 200MB</p>
+              </div>
+              
+              <div id="file-info" class="hidden">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-1" id="file-name">video.mp4</h3>
+                <p class="text-sm text-gray-500" id="file-size">0 MB</p>
+                <button onclick="event.stopPropagation(); removeVideo()" class="mt-4 px-4 py-2 rounded-lg bg-red-100 text-red-600 text-sm font-medium hover:bg-red-200 transition-colors">
+                  移除文件
+                </button>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mt-6">
+              <button onclick="startDetection()" id="btn-start" class="flex-1 gradient-primary text-white font-semibold py-4 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                开始检测
+              </button>
+              <button onclick="stopDetection()" id="btn-stop" class="flex-1 bg-red-500 text-white font-semibold py-4 rounded-xl shadow-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2 hidden">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                </svg>
+                停止检测
+              </button>
+              <button onclick="clearVideoRecoveryState()" id="btn-clear-state" class="px-6 py-4 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 hover:text-slate-800 transition-all hidden">
+                清除恢复
+              </button>
+            </div>
+            
+            <!-- Progress -->
+            <div id="progress-section" class="hidden mt-6 p-4 bg-gray-50 rounded-xl">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">处理进度</span>
+                <span class="text-sm font-bold text-emerald-600" id="progress-percent">0%</span>
+              </div>
+              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div id="progress-bar" class="progress-bar h-full rounded-full" style="width: 0%;"></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-2" id="progress-text">等待开始</p>
+            </div>
+            <div id="restore-note" class="hidden mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right - Stats & Results -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 fade-in">
+          <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            检测统计
+          </h2>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <span class="font-medium text-gray-700">总帧</span>
+              </div>
+              <span class="font-bold text-gray-800" id="stat-frames">0</span>
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-blue-50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </div>
+                <span class="font-medium text-gray-700">已检测</span>
+              </div>
+              <span class="font-bold text-gray-800" id="stat-detected">0</span>
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-red-50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+                <span class="font-medium text-gray-700">预警</span>
+              </div>
+              <span class="font-bold text-red-600" id="stat-alerts">0</span>
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-purple-50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <span class="font-medium text-gray-700">处理时长</span>
+              </div>
+              <span class="font-bold text-gray-800" id="stat-duration">0s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detection Results -->
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 fade-in">
+          <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            检测结果
+          </h2>
+
+          <div id="active-alert-summary" class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <div>
+                <div class="font-bold text-red-700">当前激活报警</div>
+                <div class="text-sm text-red-600" id="active-alert-summary-text">暂无报警</div>
+              </div>
+              <span id="active-alert-count-badge" class="stat-badge bg-red-100 text-red-600">0 项</span>
+            </div>
+            <div id="active-alert-list" class="space-y-2"></div>
+          </div>
+
+          <div id="results-empty" class="text-center py-8">
+            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+              </svg>
+            </div>
+            <p class="text-gray-500">上传视频</p>
+            <p class="text-gray-500">检测结果将显示在这里</p>
+          </div>
+
+          <div id="results-list" class="space-y-3 hidden">
+            <!-- Results will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const VIDEO_TASK_STORAGE_KEY = 'ecoscout.videoTaskState.v1';
+const VIDEO_TASK_TTL_MS = 24 * 60 * 60 * 1000;
+
+let selectedVideo = null;
+let isDetecting = false;
+let startTime = null;
+let currentTaskId = null;
+let pollInterval = null;
+let previewObjectUrl = null;
+
+function safeParseJson(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+function loadVideoRecoveryState() {
+  const state = safeParseJson(localStorage.getItem(VIDEO_TASK_STORAGE_KEY));
+  if (!state || typeof state !== 'object') return null;
+  const updatedAt = Number(state.updatedAt || 0);
+  if (!updatedAt || (Date.now() - updatedAt) > VIDEO_TASK_TTL_MS) {
+    localStorage.removeItem(VIDEO_TASK_STORAGE_KEY);
+    return null;
+  }
+  return state;
+}
+
+function saveVideoRecoveryState(partialState) {
+  const prev = loadVideoRecoveryState() || {};
+  const next = {
+    taskId: partialState.taskId ?? prev.taskId ?? null,
+    sourcePage: partialState.sourcePage ?? prev.sourcePage ?? 'video',
+    status: partialState.status ?? prev.status ?? 'pending',
+    progress: Number(partialState.progress ?? prev.progress ?? 0),
+    message: partialState.message ?? prev.message ?? '',
+    startedAt: Number(partialState.startedAt ?? prev.startedAt ?? Date.now()),
+    lastResultVideo: partialState.lastResultVideo ?? prev.lastResultVideo ?? null,
+    lastStats: partialState.lastStats ?? prev.lastStats ?? null,
+    lastActiveAlerts: partialState.lastActiveAlerts ?? prev.lastActiveAlerts ?? [],
+    updatedAt: Date.now(),
+  };
+  localStorage.setItem(VIDEO_TASK_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+function clearStoredVideoRecoveryState() {
+  localStorage.removeItem(VIDEO_TASK_STORAGE_KEY);
+}
+
+function setRestoreNote(message, tone = 'info') {
+  const note = document.getElementById('restore-note');
+  if (!message) {
+    note.classList.add('hidden');
+    note.textContent = '';
+    note.className = 'hidden mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700';
+    return;
+  }
+
+  const toneClassMap = {
+    info: 'mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700',
+    warn: 'mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700',
+    success: 'mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700',
+  };
+  note.className = toneClassMap[tone] || toneClassMap.info;
+  note.textContent = message;
+  note.classList.remove('hidden');
+}
+
+function toggleClearStateButton(visible) {
+  document.getElementById('btn-clear-state').classList.toggle('hidden', !visible);
+}
+
+function clearPreviewObjectUrl() {
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
+}
+
+function setVideoPreviewSource(src, fromObjectUrl = false) {
+  const video = document.getElementById('video-player');
+  if (fromObjectUrl) {
+    clearPreviewObjectUrl();
+    previewObjectUrl = src;
+  }
+  video.src = src;
+  video.classList.remove('hidden');
+  document.getElementById('video-placeholder').classList.add('hidden');
+}
+
+function showRecoveryPlaceholder(message = '检测任务恢复中，原始上传文件无需重新选择。') {
+  const video = document.getElementById('video-player');
+  clearPreviewObjectUrl();
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.classList.add('hidden');
+  const placeholder = document.getElementById('video-placeholder');
+  placeholder.classList.remove('hidden');
+  placeholder.innerHTML = `
+    <div class="text-center text-gray-400 px-6">
+      <div class="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6">
+        <svg class="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <p class="text-white font-semibold mb-2">视频任务已恢复</p>
+      <p class="text-sm text-gray-400">${message}</p>
+    </div>
+  `;
+}
+
+function restoreDefaultPlaceholder() {
+  document.getElementById('video-placeholder').innerHTML = `
+    <div class="text-center">
+      <div class="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6">
+        <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <p class="text-gray-500">点击下方上传视频开始检测</p>
+    </div>
+  `;
+}
+
+function renderActiveAlerts(task) {
+  const activeAlerts = Array.isArray(task.active_alerts) ? task.active_alerts : [];
+  const summary = document.getElementById('active-alert-summary');
+  const summaryText = document.getElementById('active-alert-summary-text');
+  const badge = document.getElementById('active-alert-count-badge');
+  const list = document.getElementById('active-alert-list');
+
+  if (!activeAlerts.length) {
+    summary.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  summary.classList.remove('hidden');
+  const highest = task.highest_priority_alert || activeAlerts[0].class_name || '未知事件';
+  const newCount = Number(task.new_alert_count || 0);
+  const sustainedCount = Number(task.sustained_alert_count || 0);
+  const endedCount = Number(task.ended_alert_count || 0);
+  summaryText.textContent = `最高优先级：${highest} · 新增 ${newCount} · 持续 ${sustainedCount} · 结束 ${endedCount}`;
+  badge.textContent = `${activeAlerts.length} 项`;
+  list.innerHTML = activeAlerts.map((item, index) => `
+    <div class="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
+      <div>
+        <div class="text-sm font-medium text-gray-800">${index + 1}. ${item.class_name || '未知事件'}</div>
+        <div class="text-xs text-gray-500">${item.confirmation_mode || '策略默认'} · 持续 ${Number(item.duration_seconds || 0).toFixed(1)}s</div>
+      </div>
+      <span class="stat-badge ${item.state === 'new' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}">
+        ${item.state === 'new' ? '新触发' : '持续提示'}
+      </span>
+    </div>
+  `).join('');
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function showVideoFileInfo(name, sizeText = '恢复任务') {
+  document.getElementById('upload-placeholder').classList.add('hidden');
+  document.getElementById('file-info').classList.remove('hidden');
+  document.getElementById('file-name').textContent = name;
+  document.getElementById('file-size').textContent = sizeText;
+}
+
+function showVideoTaskUi() {
+  document.getElementById('progress-section').classList.remove('hidden');
+  document.getElementById('results-empty').classList.add('hidden');
+  document.getElementById('results-list').classList.remove('hidden');
+  toggleClearStateButton(true);
+}
+
+function handleVideoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedVideo = file;
+  clearStoredVideoRecoveryState();
+  setRestoreNote('');
+  showVideoFileInfo(file.name, formatFileSize(file.size));
+  const objectUrl = URL.createObjectURL(file);
+  setVideoPreviewSource(objectUrl, true);
+  resetStats({ preserveRecoveryState: false, preserveSelection: true });
+}
+
+function removeVideo() {
+  if (isDetecting) stopDetection();
+  selectedVideo = null;
+  document.getElementById('video-input').value = '';
+  document.getElementById('upload-placeholder').classList.remove('hidden');
+  document.getElementById('file-info').classList.add('hidden');
+
+  const video = document.getElementById('video-player');
+  clearPreviewObjectUrl();
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.classList.add('hidden');
+  document.getElementById('video-placeholder').classList.remove('hidden');
+  restoreDefaultPlaceholder();
+
+  resetStats({ preserveRecoveryState: false, preserveSelection: false });
+  clearStoredVideoRecoveryState();
+  toggleClearStateButton(false);
+  setRestoreNote('');
+}
+
+function setInProgressUi() {
+  isDetecting = true;
+  document.getElementById('btn-start').classList.add('hidden');
+  document.getElementById('btn-stop').classList.remove('hidden');
+  document.getElementById('video-processing').classList.remove('hidden');
+  showVideoTaskUi();
+}
+
+function setIdleUi({ keepProgress = false } = {}) {
+  isDetecting = false;
+  document.getElementById('btn-start').classList.remove('hidden');
+  document.getElementById('btn-stop').classList.add('hidden');
+  document.getElementById('video-processing').classList.add('hidden');
+  if (!keepProgress) {
+    document.getElementById('progress-section').classList.add('hidden');
+  }
+}
+
+async function startDetection() {
+  if (!selectedVideo) {
+    alert('请先选择视频文件');
+    return;
+  }
+  if (isDetecting) return;
+
+  startTime = Date.now();
+  setInProgressUi();
+  document.getElementById('results-list').innerHTML = '';
+  setRestoreNote('视频任务已提交，离开页面后返回仍可继续查看进度。', 'info');
+
+  const formData = new FormData();
+  formData.append('file', selectedVideo);
+  formData.append('skip_frames', '1');
+
+  try {
+    const response = await fetch('/api/detect/video', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success || !data.task_id) {
+      throw new Error(data.error || data.detail || data.message || '提交失败');
+    }
+    currentTaskId = String(data.task_id);
+    saveVideoRecoveryState({
+      taskId: currentTaskId,
+      sourcePage: 'video',
+      status: data.status || 'pending',
+      progress: 0,
+      message: data.message || '任务已提交',
+      startedAt: startTime,
+      lastResultVideo: null,
+      lastStats: null,
+      lastActiveAlerts: [],
+    });
+    toggleClearStateButton(true);
+    await pollTaskStatus(currentTaskId);
+  } catch (error) {
+    console.error('提交视频失败:', error);
+    addResult({
+      class_id: 'warning',
+      class_name: `提交失败: ${error.message}`,
+      confidence: 1,
+      is_alert: true,
+      frame: '-'
+    });
+    alert(`提交失败: ${error.message}`);
+    clearStoredVideoRecoveryState();
+    finalizeDetectionUi();
+  }
+}
+
+async function pollTaskStatus(taskId) {
+  if (!taskId) return;
+
+  currentTaskId = String(taskId);
+  if (pollInterval) clearTimeout(pollInterval);
+
+  const loop = async () => {
+    if (!isDetecting || !currentTaskId) return;
+    try {
+      const resp = await fetch(`/api/tasks/${encodeURIComponent(currentTaskId)}?t=${Date.now()}`, { cache: 'no-store' });
+      const task = await resp.json().catch(() => ({}));
+      if (resp.status === 404) {
+        clearStoredVideoRecoveryState();
+        throw new Error('任务不存在或已过期');
+      }
+      if (!resp.ok) throw new Error(task.detail || task.error || task.message || '任务状态查询失败');
+
+      updateTaskProgressUi(task);
+      saveVideoRecoveryState({
+        taskId: currentTaskId,
+        sourcePage: 'video',
+        status: task.status,
+        progress: task.progress,
+        message: task.message || '',
+        startedAt: startTime || Date.now(),
+        lastResultVideo: task.result_video || null,
+        lastStats: task.stats || null,
+        lastActiveAlerts: task.active_alerts || [],
+      });
+
+      if (task.status === 'completed') {
+        applyCompletedResult(task);
+        finalizeDetectionUi(true);
+        setRestoreNote('已恢复最近一次完成的视频检测结果。', 'success');
+        return;
+      }
+      if (task.status === 'failed') {
+        clearStoredVideoRecoveryState();
+        throw new Error(task.message || '视频处理失败');
+      }
+
+      pollInterval = setTimeout(loop, 1200);
+    } catch (error) {
+      console.error('轮询失败:', error);
+      addResult({
+        class_id: 'warning',
+        class_name: `处理失败: ${error.message}`,
+        confidence: 1,
+        is_alert: true,
+        frame: '-'
+      });
+      alert(`处理失败: ${error.message}`);
+      clearStoredVideoRecoveryState();
+      finalizeDetectionUi();
+    }
+  };
+
+  await loop();
+}
+
+function updateTaskProgressUi(task) {
+  const progress = Math.max(0, Math.min(100, Number(task.progress || 0)));
+  document.getElementById('progress-percent').textContent = `${progress}%`;
+  document.getElementById('progress-bar').style.width = `${progress}%`;
+  document.getElementById('progress-text').textContent = task.message || `处理中 ${progress}%`;
+  document.getElementById('processing-text').textContent = task.message || '处理中...';
+  if (startTime) {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById('stat-duration').textContent = `${elapsed}s`;
+  }
+  renderActiveAlerts(task);
+}
+
+function applyCompletedResult(result) {
+  if (!result) {
+    throw new Error('任务结果为空');
+  }
+
+  const stats = result.stats || {};
+  document.getElementById('stat-frames').textContent = stats.total_frames || 0;
+  document.getElementById('stat-detected').textContent = stats.total_detections || 0;
+  document.getElementById('stat-alerts').textContent = stats.total_alerts || 0;
+  renderActiveAlerts({
+    active_alerts: stats.active_alerts || [],
+    highest_priority_alert: stats.highest_priority_alert,
+    new_alert_count: stats.new_alert_count || 0,
+    sustained_alert_count: stats.sustained_alert_count || 0,
+    ended_alert_count: stats.ended_alert_count || 0
+  });
+
+  document.getElementById('progress-percent').textContent = '100%';
+  document.getElementById('progress-bar').style.width = '100%';
+  document.getElementById('progress-text').textContent = '处理完成';
+  document.getElementById('processing-text').textContent = '处理完成';
+
+  if (result.result_video) {
+    setVideoPreviewSource(`/uploads/${result.result_video}`);
+    const videoPlayer = document.getElementById('video-player');
+    videoPlayer.play().catch(() => {
+      // Ignore autoplay blocks by browser policy.
+    });
+  } else {
+    showRecoveryPlaceholder('任务已完成，但当前没有可播放的结果视频。');
+  }
+
+  const alertTypeMap = {
+    overflow: { key: 'overflow', label: '垃圾溢出' },
+    garbage: { key: 'garbage', label: '散落垃圾' },
+    fire: { key: 'fire', label: '火焰' },
+    smoke: { key: 'smoke', label: '烟雾' },
+    video_alert: { key: 'warning', label: '视频预警' },
+    垃圾溢出: { key: 'overflow', label: '垃圾溢出' },
+    散落垃圾: { key: 'garbage', label: '散落垃圾' },
+    火焰: { key: 'fire', label: '火焰' },
+    烟雾: { key: 'smoke', label: '烟雾' },
+    视频预警: { key: 'warning', label: '视频预警' }
+  };
+  const rawTypes = Array.isArray(stats.alert_types) ? stats.alert_types : [];
+  const normalized = rawTypes
+    .map((t) => alertTypeMap[String(t)] || { key: 'warning', label: String(t) })
+    .filter((item) => item.label && item.label !== 'normal');
+  const uniqueLabels = [...new Set(normalized.map((item) => item.label))];
+  const primaryKey = normalized.length === 1 ? normalized[0].key : 'warning';
+  const reasonText = uniqueLabels.length > 0 ? uniqueLabels.join('、') : '历史任务未记录类型';
+
+  document.getElementById('results-list').innerHTML = '';
+  addResult({
+    class_id: stats.total_alerts > 0 ? primaryKey : 'normal',
+    class_name: stats.total_alerts > 0 ? `检测到异常：${reasonText}` : '检测完成，未发现异常',
+    confidence: 1,
+    is_alert: stats.total_alerts > 0,
+    frame: `${stats.total_frames || 0}`
+  });
+}
+
+function stopDetection() {
+  if (!isDetecting) return;
+  isDetecting = false;
+  if (pollInterval) clearTimeout(pollInterval);
+  pollInterval = null;
+  finalizeDetectionUi(false, { clearTaskId: false, keepProgress: true });
+  setRestoreNote('已停止当前页面轮询，后台任务可能仍在继续，可稍后返回恢复。', 'warn');
+}
+
+function finalizeDetectionUi(completed = false, options = {}) {
+  const { clearTaskId = true, keepProgress = completed } = options;
+  isDetecting = false;
+  if (clearTaskId) {
+    currentTaskId = null;
+  }
+  if (pollInterval) clearTimeout(pollInterval);
+  pollInterval = null;
+  setIdleUi({ keepProgress });
+}
+
+function resetStats(options = {}) {
+  const { preserveRecoveryState = false, preserveSelection = false } = options;
+  document.getElementById('stat-frames').textContent = '0';
+  document.getElementById('stat-detected').textContent = '0';
+  document.getElementById('stat-alerts').textContent = '0';
+  document.getElementById('stat-duration').textContent = '0s';
+  document.getElementById('progress-percent').textContent = '0%';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-text').textContent = '等待开始';
+  document.getElementById('processing-text').textContent = '准备...';
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('results-empty').classList.remove('hidden');
+  document.getElementById('results-list').classList.add('hidden');
+  document.getElementById('active-alert-summary').classList.add('hidden');
+  document.getElementById('active-alert-list').innerHTML = '';
+  if (pollInterval) clearTimeout(pollInterval);
+  pollInterval = null;
+  currentTaskId = null;
+  startTime = null;
+  setIdleUi({ keepProgress: false });
+  toggleClearStateButton(false);
+  setRestoreNote('');
+  if (!preserveRecoveryState) {
+    clearStoredVideoRecoveryState();
+  }
+  if (!preserveSelection) {
+    selectedVideo = null;
+  }
+}
+
+function addResult(result) {
+  const list = document.getElementById('results-list');
+  const typeConfig = {
+    garbage_bin: { icon: '🗑️', color: 'emerald' },
+    overflow: { icon: '⚠️', color: 'amber' },
+    garbage: { icon: '🧹', color: 'orange' },
+    fire: { icon: '🔥', color: 'red' },
+    smoke: { icon: '💨', color: 'purple' },
+    warning: { icon: '⚠️', color: 'red' },
+    normal: { icon: '✅', color: 'emerald' }
+  };
+  const config = typeConfig[result.class_id] || { icon: '📌', color: 'gray' };
+  const isWarning = Boolean(result.is_alert);
+  const confidenceText = `${((result.confidence || 0) * 100).toFixed(1)}%`;
+  const html = `
+    <div class="result-item p-3 rounded-xl ${isWarning ? 'bg-red-50 border border-red-100' : 'bg-emerald-50 border border-emerald-100'}">
+      <div class="flex items-center gap-3">
+        <div class="text-2xl">${config.icon}</div>
+        <div class="flex-1">
+          <div class="font-medium text-gray-800">${result.class_name || '检测结果'}</div>
+          <div class="text-xs text-gray-500">帧: ${result.frame || '-'} · 置信度: ${confidenceText}</div>
+        </div>
+        <span class="stat-badge ${isWarning ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">
+          ${isWarning ? '预警' : '正常'}
+        </span>
+      </div>
+    </div>
+  `;
+  list.insertAdjacentHTML('afterbegin', html);
+  while (list.children.length > 20) list.removeChild(list.lastChild);
+  document.getElementById('results-empty').classList.add('hidden');
+  document.getElementById('results-list').classList.remove('hidden');
+}
+
+function restoreVideoTaskStateFromTask(task) {
+  const startedAt = Number(task.startedAt || Date.now());
+  startTime = startedAt;
+  currentTaskId = task.taskId || null;
+  showVideoTaskUi();
+  toggleClearStateButton(true);
+
+  if (task.status === 'completed' && task.lastResultVideo) {
+    showVideoFileInfo('最近一次完成的视频任务', '恢复结果');
+    applyCompletedResult({
+      result_video: task.lastResultVideo,
+      stats: task.lastStats || {},
+      active_alerts: task.lastActiveAlerts || [],
+    });
+    finalizeDetectionUi(true, { clearTaskId: false, keepProgress: true });
+    setRestoreNote('已恢复最近一次完成的视频检测结果。', 'success');
+    return;
+  }
+
+  showVideoFileInfo('恢复中的视频任务', '原文件无需重新上传');
+  showRecoveryPlaceholder();
+  setInProgressUi();
+  updateTaskProgressUi({
+    progress: task.progress || 0,
+    message: task.message || '任务恢复中...',
+    active_alerts: task.lastActiveAlerts || [],
+    highest_priority_alert: (task.lastActiveAlerts || [])[0]?.class_name || null,
+  });
+  setRestoreNote('已恢复后台视频任务进度，正在继续获取最新状态。', 'info');
+  pollTaskStatus(task.taskId);
+}
+
+function restoreVideoRecoveryStateIfNeeded() {
+  const task = loadVideoRecoveryState();
+  if (!task || !task.taskId) {
+    return;
+  }
+  restoreVideoTaskStateFromTask(task);
+}
+
+function clearVideoRecoveryState() {
+  clearStoredVideoRecoveryState();
+  removeVideo();
+  setRestoreNote('已清除本地视频恢复状态。', 'success');
+}
+
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('video/')) {
+    document.getElementById('video-input').files = e.dataTransfer.files;
+    handleVideoSelect({ target: { files: [file] } });
+  }
+});
+
+window.addEventListener('storage', (event) => {
+  if (event.key !== VIDEO_TASK_STORAGE_KEY) return;
+  const state = loadVideoRecoveryState();
+  if (!state) {
+    resetStats({ preserveRecoveryState: true, preserveSelection: false });
+    restoreDefaultPlaceholder();
+    return;
+  }
+  if (!currentTaskId || currentTaskId !== state.taskId) {
+    restoreVideoTaskStateFromTask(state);
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  isDetecting = false;
+  if (pollInterval) clearTimeout(pollInterval);
+});
+
+restoreVideoRecoveryStateIfNeeded();
+</script>
+
+</body>
+</html>

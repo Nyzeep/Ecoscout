@@ -1,0 +1,783 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预警记录 - 社区垃圾与火情识别预警系统</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; }
+
+.gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.slide-in {
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+.record-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.record-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #10b981;
+  transition: all 0.3s;
+  transform: translateX(-50%);
+}
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+
+.filter-btn {
+  transition: all 0.2s;
+}
+.filter-btn.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.pagination-btn {
+  transition: all 0.2s;
+}
+.pagination-btn:hover:not(:disabled) {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+.pagination-btn.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2"><span class="text-xl font-bold">社区垃圾与火情<span class="gradient-text">识别预警系统</span></span></a>
+    
+    <div class="flex items-center gap-1">
+      <a href="/" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">首页</a>
+      <a href="/detection" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">智慧检测</a>
+      <a href="/alerts" class="nav-link active px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 rounded-lg">预警记录</a>
+      <a href="/statistics" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据统计</a>
+      <a href="/dataset" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据集</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="pt-24 pb-16 cyber-grid min-h-screen">
+  <div class="max-w-6xl mx-auto px-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">预警记录</h1>
+        <p class="text-gray-500 flex items-center gap-2">
+          <span class="live-indicator">
+            <span class="live-dot"></span>
+            实时监控
+          </span>
+          <span class="text-gray-300">|</span>
+          <span id="total-count">共 0 条记录</span>
+        </p>
+      </div>
+      
+      <!-- Filter Buttons -->
+      <div class="flex items-center gap-2 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+        <button onclick="changeFilter('all')" class="filter-btn active px-5 py-2.5 rounded-lg text-sm font-medium border border-transparent">
+          全部
+        </button>
+        <button onclick="changeFilter('warning')" class="filter-btn px-5 py-2.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-emerald-300">
+          仅预警
+        </button>
+        <button onclick="changeFilter('normal')" class="filter-btn px-5 py-2.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-emerald-300">
+          仅正常
+        </button>
+      </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800" id="stat-total">0</div>
+            <div class="text-sm text-gray-500">总记录数</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-red-600" id="stat-warning">0</div>
+            <div class="text-sm text-gray-500">预警记录</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-emerald-600" id="stat-normal">0</div>
+            <div class="text-sm text-gray-500">正常记录</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-purple-600" id="stat-today">0</div>
+            <div class="text-sm text-gray-500">今日预警</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Records List -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+      <div class="p-6 border-b border-gray-100">
+        <h2 class="text-lg font-bold text-gray-800">检测记录列表</h2>
+      </div>
+      
+      <!-- Loading State -->
+      <div id="loading-state" class="p-12">
+        <div class="space-y-4">
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50">
+            <div class="w-12 h-12 rounded-xl skeleton"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 w-48 rounded skeleton"></div>
+              <div class="h-3 w-32 rounded skeleton"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50">
+            <div class="w-12 h-12 rounded-xl skeleton"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 w-48 rounded skeleton"></div>
+              <div class="h-3 w-32 rounded skeleton"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50">
+            <div class="w-12 h-12 rounded-xl skeleton"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 w-48 rounded skeleton"></div>
+              <div class="h-3 w-32 rounded skeleton"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden p-16 text-center">
+        <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 empty-state">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">暂无记录</h3>
+        <p class="text-gray-500">开始检测后，记录将显示在这里</p>
+        <a href="/detection" class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl gradient-primary text-white font-semibold hover:shadow-lg transition-shadow">智慧检测</a>
+      </div>
+      
+      <!-- Records -->
+      <div id="records-list" class="divide-y divide-gray-100 hidden">
+        <!-- Records will be inserted here -->
+      </div>
+      
+      <!-- Pagination -->
+      <div id="pagination" class="hidden p-6 border-t border-gray-100">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-500" id="page-info">
+            显示 1-15 条，共 0 条
+          </div>
+          <div class="flex items-center gap-2" id="pagination-buttons">
+            <!-- Pagination buttons will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Image Modal -->
+<div id="image-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal()"></div>
+  <div class="absolute inset-4 md:inset-8 flex items-center justify-center">
+    <div class="bg-white rounded-3xl overflow-hidden max-w-full max-h-full shadow-2xl">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 id="modal-title" class="font-bold text-gray-800">检测详情</h3>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4" id="modal-content">
+        <div id="modal-reason" class="hidden mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800"></div>
+        <img id="modal-image" class="max-w-full max-h-[70vh] rounded-xl hidden" alt="Detection Detail">
+        <div id="modal-video" class="hidden max-w-[80vw]">
+          <div class="space-y-2 text-sm text-gray-700 mb-4" id="modal-video-stats"></div>
+          <a id="modal-video-link" href="#" target="_blank" class="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700">
+            打开检测视频
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+let currentPage = 1;
+const recordsPerPage = 10;
+let allRecords = [];
+let totalRecords = 0;
+const imageCache = {};
+let autoRefreshInterval = null;
+
+const typeIcons = {
+  0: { icon: '🗑️', label: '垃圾桶', isAlert: false },
+  1: { icon: '⚠️', label: '垃圾溢出', isAlert: true },
+  2: { icon: '🧹', label: '散落垃圾', isAlert: true },
+  3: { icon: '🔥', label: '火焰', isAlert: true },
+  4: { icon: '💨', label: '烟雾', isAlert: true },
+  garbage_bin: { icon: '🗑️', label: '垃圾桶', isAlert: false },
+  overflow: { icon: '⚠️', label: '垃圾溢出', isAlert: true },
+  garbage: { icon: '🧹', label: '散落垃圾', isAlert: true },
+  fire: { icon: '🔥', label: '火焰', isAlert: true },
+  smoke: { icon: '💨', label: '烟雾', isAlert: true },
+  video_alert: { icon: '🎬', label: '视频预警', isAlert: true },
+  normal: { icon: '✅', label: '检测正常', isAlert: false }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadRecords();
+  startAutoRefresh();
+});
+
+window.addEventListener('beforeunload', () => {
+  stopAutoRefresh();
+});
+
+async function loadRecords() {
+  try {
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      per_page: String(recordsPerPage),
+      status: currentFilter
+    });
+
+    const response = await fetch(`/api/alerts?${params}`);
+    if (!response.ok) {
+      throw new Error('加载记录失败');
+    }
+
+    const data = await response.json();
+    totalRecords = Number(data.total || 0);
+    allRecords = Array.isArray(data.records) ? data.records : [];
+
+    updateStats();
+    renderRecords();
+  } catch (error) {
+    console.error('加载记录失败:', error);
+    showLoadError();
+  }
+}
+
+function updateStats() {
+  const warningCount = allRecords.filter(r => r.status !== 'normal').length;
+  const normalCount = allRecords.filter(r => r.status === 'normal').length;
+  const today = new Date().toDateString();
+  const todayWarnings = allRecords.filter(r => r.status !== 'normal' && new Date(r.time).toDateString() === today).length;
+
+  document.getElementById('stat-total').textContent = String(totalRecords);
+  document.getElementById('stat-warning').textContent = String(warningCount);
+  document.getElementById('stat-normal').textContent = String(normalCount);
+  document.getElementById('stat-today').textContent = String(todayWarnings);
+  document.getElementById('total-count').textContent = `共 ${totalRecords} 条记录`;
+}
+
+function startAutoRefresh() {
+  if (autoRefreshInterval) {
+    return;
+  }
+  autoRefreshInterval = setInterval(() => {
+    loadRecords();
+  }, 10000);
+}
+
+function stopAutoRefresh() {
+  if (!autoRefreshInterval) {
+    return;
+  }
+  clearInterval(autoRefreshInterval);
+  autoRefreshInterval = null;
+}
+
+function changeFilter(filter) {
+  currentFilter = filter;
+  currentPage = 1;
+
+  const order = ['all', 'warning', 'normal'];
+  document.querySelectorAll('.filter-btn').forEach((btn, index) => {
+    btn.classList.toggle('active', order[index] === filter);
+  });
+
+  loadRecords();
+}
+
+function showLoadError() {
+  document.getElementById('loading-state').classList.add('hidden');
+  const listEl = document.getElementById('records-list');
+  listEl.classList.remove('hidden');
+  listEl.innerHTML = `
+    <div class="p-10 text-center text-gray-500">
+      加载失败，请稍后重试
+    </div>
+  `;
+  document.getElementById('pagination').classList.add('hidden');
+}
+
+function renderRecords() {
+  document.getElementById('loading-state').classList.add('hidden');
+
+  if (!allRecords.length) {
+    document.getElementById('records-list').classList.add('hidden');
+    document.getElementById('empty-state').classList.remove('hidden');
+    document.getElementById('pagination').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('records-list').classList.remove('hidden');
+  document.getElementById('pagination').classList.remove('hidden');
+
+  const listEl = document.getElementById('records-list');
+  listEl.innerHTML = allRecords.map((record, index) => createRecordCard(record, index)).join('');
+
+  const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPage));
+  renderPagination(totalPages);
+  hydrateRecordImages(allRecords);
+}
+
+function createRecordCard(record, index) {
+  const isWarning = record.status !== 'normal';
+  const cardClass = isWarning ? 'bg-red-50 border-l-4 border-red-500' : 'bg-emerald-50 border-l-4 border-emerald-500';
+  const statusBadge = isWarning
+    ? '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">预警</span>'
+    : '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">正常</span>';
+
+  const types = Array.isArray(record.types) ? record.types : [];
+  const typeInfo = types.length > 0
+    ? (typeIcons[types[0]] || { icon: '📌', label: String(types[0]), isAlert: false })
+    : { icon: '✅', label: '检测完成', isAlert: false };
+
+  const recordId = String(record.id || '');
+  const thumbImageId = `thumb-image-${recordId}`;
+  const thumbIconId = `thumb-icon-${recordId}`;
+
+  return `
+    <div class="p-6 ${cardClass} slide-in" style="animation-delay: ${index * 0.05}s;">
+      <div class="flex items-start gap-5">
+        <div class="w-16 h-16 rounded-xl overflow-hidden cursor-pointer flex-shrink-0 hover:ring-2 hover:ring-emerald-500 transition-all relative" onclick="showImage('${recordId}','${record.source || ''}')">
+          <img id="${thumbImageId}" class="w-full h-full object-cover hidden" alt="Detection">
+          <div id="${thumbIconId}" class="w-16 h-16 rounded-xl ${isWarning ? 'bg-red-100' : 'bg-emerald-100'} flex items-center justify-center text-2xl">
+            ${typeInfo.icon}
+          </div>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-gray-800">${typeInfo.label}</span>
+              ${statusBadge}
+            </div>
+            <span class="text-sm text-gray-400">${formatRelativeTime(record.time)}</span>
+          </div>
+
+          <div class="flex items-center gap-4 text-sm text-gray-500 mb-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              检测数量 ${record.total || 0}
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0"/>
+              </svg>
+              ${record.time || ''}
+            </span>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            ${types.map(t => {
+              const info = typeIcons[t] || { icon: '📌', label: String(t), isAlert: false };
+              const colorClass = info.isAlert ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+              return `<span class="px-3 py-1 rounded-lg text-xs font-medium border ${colorClass}">${info.icon} ${info.label}</span>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="flex-shrink-0">
+          <button class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" onclick="showRecordDetail('${recordId}')">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function formatRelativeTime(timeStr) {
+  if (!timeStr) {
+    return '';
+  }
+
+  const date = new Date(timeStr);
+  if (Number.isNaN(date.getTime())) {
+    return String(timeStr);
+  }
+
+  const diff = Date.now() - date.getTime();
+  if (diff < 60 * 1000) {
+    return '刚刚';
+  }
+  if (diff < 60 * 60 * 1000) {
+    return `${Math.floor(diff / (60 * 1000))} 分钟前`;
+  }
+  if (diff < 24 * 60 * 60 * 1000) {
+    return `${Math.floor(diff / (60 * 60 * 1000))} 小时前`;
+  }
+  return String(timeStr);
+}
+
+function renderPagination(totalPages) {
+  const startIndex = (currentPage - 1) * recordsPerPage + 1;
+  const endIndex = Math.min(currentPage * recordsPerPage, totalRecords);
+  document.getElementById('page-info').textContent = `显示 ${startIndex}-${endIndex} 条，共 ${totalRecords} 条`;
+
+  let buttons = '';
+  buttons += `<button class="pagination-btn w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center font-medium" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>`;
+
+  for (let i = 1; i <= totalPages; i += 1) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      buttons += `<button class="pagination-btn ${i === currentPage ? 'active' : ''} w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center font-medium" onclick="goToPage(${i})">${i}</button>`;
+    } else if (i === currentPage - 2 || i === currentPage + 2) {
+      buttons += '<span class="w-10 text-center">...</span>';
+    }
+  }
+
+  buttons += `<button class="pagination-btn w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center font-medium" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>`;
+
+  document.getElementById('pagination-buttons').innerHTML = buttons;
+}
+
+function goToPage(page) {
+  const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPage));
+  if (page < 1 || page > totalPages) {
+    return;
+  }
+  currentPage = page;
+  loadRecords();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function buildReasonText(types) {
+  const items = Array.isArray(types) ? types : [];
+  const labels = items
+    .map((item) => {
+      const key = String(item ?? '');
+      if (typeIcons[key]) {
+        return typeIcons[key].label;
+      }
+      return key.trim();
+    })
+    .filter((item) => item && item !== 'normal' && item !== '检测正常');
+  const uniqueLabels = [...new Set(labels)];
+  if (uniqueLabels.length === 0) {
+    return '未标注具体预警原因';
+  }
+  return uniqueLabels.join('、');
+}
+
+function renderReason(types, time) {
+  const reasonEl = document.getElementById('modal-reason');
+  const reasonText = buildReasonText(types);
+  reasonEl.innerHTML = `
+    <div><strong>预警原因：</strong>${reasonText}</div>
+    <div class="mt-1 text-xs text-amber-700/90"><strong>记录时间：</strong>${time || '-'}</div>
+  `;
+  reasonEl.classList.remove('hidden');
+}
+
+async function showRecordDetail(id) {
+  const record = allRecords.find((item) => String(item.id || '') === String(id));
+  try {
+    const response = await fetch(`/api/alerts/${encodeURIComponent(id)}/detail`);
+    if (!response.ok) {
+      if (record) {
+        const isVideo = record.source === 'video';
+        document.getElementById('modal-title').textContent = isVideo ? '视频预警详情' : '图片预警详情';
+        renderReason(record.types, record.time);
+        document.getElementById('modal-image').classList.add('hidden');
+        const videoEl = document.getElementById('modal-video');
+        if (isVideo) {
+          const stats = {
+            total_detections: record.total ?? 0,
+            total_alerts: record.alert_count ?? 0,
+            suppressed_alerts: 0,
+            video_info: '当前后端未返回视频详情接口（/api/alerts/{id}/detail）',
+          };
+          document.getElementById('modal-video-stats').innerHTML = `
+            <div>时间：${record.time || '-'}</div>
+            <div>预警类型：${Array.isArray(record.types) ? record.types.join('、') : '-'}</div>
+            <div>总检测数：${stats.total_detections}</div>
+            <div>总预警数：${stats.total_alerts}</div>
+            <div>冷却抑制：${stats.suppressed_alerts}</div>
+            <div>视频信息：${stats.video_info}</div>
+          `;
+          const link = document.getElementById('modal-video-link');
+          link.href = '#';
+          link.classList.add('hidden');
+          videoEl.classList.remove('hidden');
+        } else {
+          const src = await fetchAlertImageSrc(String(id));
+          videoEl.classList.add('hidden');
+          const imgEl = document.getElementById('modal-image');
+          imgEl.src = src;
+          imgEl.classList.remove('hidden');
+        }
+        document.getElementById('image-modal').classList.remove('hidden');
+        return;
+      }
+      throw new Error('详情加载失败');
+    }
+    const payload = await response.json();
+    document.getElementById('modal-title').textContent = payload.source === 'video' ? '视频预警详情' : '图片预警详情';
+    renderReason(payload.types, payload.time);
+
+    const imgEl = document.getElementById('modal-image');
+    const videoEl = document.getElementById('modal-video');
+    imgEl.classList.add('hidden');
+    videoEl.classList.add('hidden');
+
+    if (payload.detail_type === 'video') {
+      const stats = payload.stats || {};
+      document.getElementById('modal-video-stats').innerHTML = `
+        <div>时间：${payload.time || '-'}</div>
+        <div>预警类型：${Array.isArray(payload.types) ? payload.types.join('、') : '-'}</div>
+        <div>总检测数：${stats.total_detections ?? payload.total_detections ?? 0}</div>
+        <div>总预警数：${stats.total_alerts ?? payload.alert_count ?? 0}</div>
+        <div>冷却抑制：${stats.suppressed_alerts ?? 0}</div>
+        <div>视频信息：${stats.video_info || '-'}</div>
+      `;
+      const link = document.getElementById('modal-video-link');
+      if (payload.result_video) {
+        link.href = `/uploads/${payload.result_video}`;
+        link.classList.remove('hidden');
+      } else {
+        link.href = '#';
+        link.classList.add('hidden');
+      }
+      videoEl.classList.remove('hidden');
+    } else {
+      const src = payload.image ? `data:image/jpeg;base64,${payload.image}` : await fetchAlertImageSrc(String(id));
+      imgEl.src = src;
+      imgEl.classList.remove('hidden');
+    }
+    document.getElementById('image-modal').classList.remove('hidden');
+  } catch (error) {
+    alert('加载详情失败');
+  }
+}
+
+async function fetchAlertImageSrc(id) {
+  if (imageCache[id]) {
+    return imageCache[id];
+  }
+
+  const response = await fetch(`/api/alerts/${encodeURIComponent(id)}/image`);
+  if (!response.ok) {
+    throw new Error('图片加载失败');
+  }
+
+  const payload = await response.json();
+  if (!payload.image) {
+    throw new Error('图片数据为空');
+  }
+
+  const src = `data:image/jpeg;base64,${payload.image}`;
+  imageCache[id] = src;
+  return src;
+}
+
+function hydrateRecordImages(records) {
+  records.forEach((record) => {
+    if (record.source === 'video') {
+      return;
+    }
+    const recordId = String(record.id || '');
+    if (!recordId) {
+      return;
+    }
+
+    fetchAlertImageSrc(recordId)
+      .then((src) => {
+        const img = document.getElementById(`thumb-image-${recordId}`);
+        const icon = document.getElementById(`thumb-icon-${recordId}`);
+        if (img) {
+          img.src = src;
+          img.classList.remove('hidden');
+        }
+        if (icon) {
+          icon.classList.add('hidden');
+        }
+      })
+      .catch(() => {
+      });
+  });
+}
+
+async function showImage(id, source = 'image') {
+  if (source === 'video') {
+    await showRecordDetail(id);
+    return;
+  }
+  try {
+    const record = allRecords.find((item) => String(item.id || '') === String(id));
+    const src = await fetchAlertImageSrc(String(id));
+    document.getElementById('modal-title').textContent = '图片预警详情';
+    renderReason(record?.types || [], record?.time || '');
+    document.getElementById('modal-video').classList.add('hidden');
+    const imgEl = document.getElementById('modal-image');
+    imgEl.src = src;
+    imgEl.classList.remove('hidden');
+    document.getElementById('image-modal').classList.remove('hidden');
+  } catch (error) {
+    alert('未找到该记录图片');
+  }
+}
+
+function closeModal() {
+  document.getElementById('image-modal').classList.add('hidden');
+}
+</script>
+
+</body>
+</html>

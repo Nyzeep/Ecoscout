@@ -1,0 +1,9 @@
+﻿dataset/
+.venv/
+.venv311/
+__pycache__/
+*.py[cod]
+.tmp/
+.yolo_cfg/
+.idea/
+.playwright-cli/

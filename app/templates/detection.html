@@ -1,0 +1,1523 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社区垃圾与火情识别预警系统</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; }
+
+.gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.upload-zone {
+  border: 2px dashed #d1d5db;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  transform: scale(1.01);
+}
+
+.upload-zone.has-image {
+  border-style: solid;
+  border-color: #10b981;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.result-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.result-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: #d1d5db;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-switch.active {
+  background: #10b981;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active::after {
+  left: 25px;
+}
+
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #10b981;
+  transition: all 0.3s;
+  transform: translateX(-50%);
+}
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  animation: scanLine 2s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+  0%, 100% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.confidence-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.result-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.result-item:hover {
+  transform: translateX(6px);
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2"><span class="text-xl font-bold">社区垃圾与火情<span class="gradient-text">识别预警系统</span></span></a>
+    
+    <div class="flex items-center gap-1">
+      <a href="/" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">首页</a>
+      <a href="/detection" class="nav-link active px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 rounded-lg">智慧检测</a>
+      <a href="/alerts" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">预警记录</a>
+      <a href="/statistics" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据统计</a>
+      <a href="/dataset" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据集</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="pt-24 pb-16 cyber-grid min-h-screen">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-gray-800 mb-3">社区垃圾与火情识别预警系统</h1>
+      <p class="text-gray-500 text-lg">上传图片、使用摄像头或上传视频，AI 将自动识别社区垃圾与火情风险</p>
+    </div>
+    
+    <!-- Main Grid -->
+    <div class="grid lg:grid-cols-3 gap-8">
+      <!-- Left Panel - Upload Area -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <!-- Tabs -->
+          <div class="flex border-b border-gray-100">
+            <button id="tab-upload" onclick="switchTab('upload')" class="flex-1 py-4 text-sm font-semibold text-emerald-600 border-b-2 border-emerald-500 transition-all">
+              <span class="flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                上传图片
+              </span>
+            </button>
+            <button id="tab-camera" onclick="switchTab('camera')" class="flex-1 py-4 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-emerald-600 transition-all">
+              <span class="flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                摄像头
+              </span>
+            </button>
+            <button id="tab-video" onclick="switchTab('video')" class="flex-1 py-4 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-emerald-600 transition-all">
+              <span class="flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                视频检测
+              </span>
+            </button>
+          </div>
+          
+          <!-- Upload Tab Content -->
+          <div id="content-upload" class="p-8">
+            <div id="upload-zone" class="upload-zone rounded-2xl p-12 text-center cursor-pointer relative" onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+              
+              <div id="upload-placeholder">
+                <div class="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
+                  <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">拖拽图片到这里</h3>
+                <p class="text-gray-500 mb-4">或点击选择文件上传</p>
+                <p class="text-sm text-gray-400">支持 JPG、PNG、GIF、BMP 格式</p>
+              </div>
+              
+              <div id="image-preview" class="hidden">
+                <img id="preview-img" class="max-h-96 mx-auto rounded-xl shadow-lg" alt="Preview">
+                <div class="scan-line"></div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mt-6">
+              <button onclick="detectImage()" id="btn-detect" class="flex-1 gradient-primary text-white font-semibold py-4 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                开始检测
+              </button>
+              <button onclick="resetUpload()" class="px-6 py-4 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-emerald-300 hover:text-emerald-600 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Camera Tab Content -->
+          <div id="content-camera" class="hidden p-8">
+            <div class="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
+              <video id="camera-video" class="w-full h-full object-cover" autoplay playsinline></video>
+              <canvas id="camera-canvas" class="hidden"></canvas>
+              <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500">
+                <div class="text-center">
+                  <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                  <p>点击按钮启动摄像头</p>
+                </div>
+              </div>
+              <div class="scan-line"></div>
+            </div>
+            
+            <!-- Camera Controls -->
+            <div class="flex gap-4 mt-6 items-center">
+              <button onclick="toggleCamera()" id="btn-camera" class="flex-1 bg-gray-800 text-white font-semibold py-4 rounded-xl hover:bg-gray-900 transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                启动摄像头
+              </button>
+              <button onclick="captureAndDetect()" id="btn-capture" class="flex-1 gradient-primary text-white font-semibold py-4 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                拍照检测
+              </button>
+            </div>
+            
+            <!-- Auto Detect Toggle -->
+            <div class="flex items-center justify-between mt-4 p-4 bg-gray-50 rounded-xl">
+              <div>
+                <div class="font-semibold text-gray-800">自动连续检测</div>
+                <div class="text-sm text-gray-500">每秒自动检测一次</div>
+              </div>
+              <div id="auto-toggle" class="toggle-switch" onclick="toggleAutoDetect()"></div>
+            </div>
+          </div>
+
+          <!-- Video Tab Content -->
+          <div id="content-video" class="hidden p-8">
+            <div class="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
+              <div id="video-placeholder" class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center text-gray-500">
+                  <svg class="w-16 h-16 mx-auto mb-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                  <p>上传视频后可开始检测</p>
+                </div>
+              </div>
+              <video id="video-player" class="w-full h-full object-contain hidden" controls></video>
+              <div id="video-processing" class="absolute inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full spinner mx-auto mb-4"></div>
+                  <p class="text-white font-semibold mb-2">正在处理视频...</p>
+                  <p class="text-gray-400 text-sm" id="video-processing-text">准备中...</p>
+                </div>
+              </div>
+            </div>
+
+            <div id="video-upload-zone" class="upload-zone rounded-2xl p-8 text-center cursor-pointer mt-6" onclick="document.getElementById('video-input').click()">
+              <input type="file" id="video-input" accept="video/*" class="hidden" onchange="handleVideoSelect(event)">
+              <div id="video-upload-placeholder">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">拖拽视频到这里</h3>
+                <p class="text-gray-500 mb-2">或点击选择文件上传</p>
+                <p class="text-sm text-gray-400">支持 MP4、AVI、MOV 格式</p>
+              </div>
+              <div id="video-file-info" class="hidden">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-1" id="video-file-name">video.mp4</h3>
+                <p class="text-sm text-gray-500" id="video-file-size">0 MB</p>
+                <button onclick="event.stopPropagation(); removeVideo()" class="mt-4 px-4 py-2 rounded-lg bg-red-100 text-red-600 text-sm font-medium hover:bg-red-200 transition-colors">
+                  移除文件
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-4 mt-6">
+              <button onclick="startVideoDetection()" id="video-btn-start" class="flex-1 gradient-primary text-white font-semibold py-4 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                开始检测
+              </button>
+              <button onclick="stopVideoDetection()" id="video-btn-stop" class="flex-1 bg-red-500 text-white font-semibold py-4 rounded-xl shadow-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2 hidden">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                </svg>
+                停止检测
+              </button>
+              <button onclick="clearVideoRecoveryState()" id="video-btn-clear-state" class="px-6 py-4 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 hover:text-slate-800 transition-all hidden">
+                清除恢复
+              </button>
+            </div>
+
+            <div id="video-progress-section" class="hidden mt-6 p-4 bg-gray-50 rounded-xl">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">处理进度</span>
+                <span class="text-sm font-bold text-emerald-600" id="video-progress-percent">0%</span>
+              </div>
+              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div id="video-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%;"></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-2" id="video-progress-text">已处理 0 / 0 帧</p>
+            </div>
+            <div id="video-restore-note" class="hidden mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700"></div>
+          </div>
+          
+          <!-- Loading State -->
+          <div id="loading-state" class="hidden p-12 text-center">
+            <div class="w-20 h-20 rounded-full border-4 border-emerald-200 border-t-emerald-500 spinner mx-auto mb-6"></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">正在分析...</h3>
+            <p class="text-gray-500">AI 正在识别图片中的垃圾与火情信息</p>
+          </div>
+          
+          <!-- Result Image -->
+          <div id="result-image" class="hidden p-8 pt-0">
+            <div class="relative rounded-2xl overflow-hidden bg-gray-100 mt-6">
+              <img id="result-img" class="w-full" alt="Result">
+              <div class="scan-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel - Results -->
+      <div class="lg:col-span-1">
+        <div class="space-y-6 sticky top-24">
+          <div id="right-panel-image" class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              检测结果
+            </h2>
+
+            <div id="result-empty" class="text-center py-12">
+              <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+              </div>
+              <p class="text-gray-500">上传图片</p>
+              <p class="text-gray-500">检测结果将显示在这里</p>
+            </div>
+
+            <div id="result-list" class="space-y-4 hidden"></div>
+            <div id="scene-status" class="hidden mt-6 p-4 rounded-xl border-2"></div>
+          </div>
+
+          <div id="right-panel-video" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+              <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                检测统计
+              </h2>
+
+              <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-700">总帧</span>
+                  </div>
+                  <span class="font-bold text-gray-800" id="video-stat-frames">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-blue-50">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-700">已检测</span>
+                  </div>
+                  <span class="font-bold text-gray-800" id="video-stat-detected">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-red-50">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-700">预警</span>
+                  </div>
+                  <span class="font-bold text-red-600" id="video-stat-alerts">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-purple-50">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                    <span class="font-medium text-gray-700">处理时长</span>
+                  </div>
+                  <span class="font-bold text-gray-800" id="video-stat-duration">0s</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+              <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                视频结果
+              </h2>
+              <div id="video-active-alert-summary" class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <div class="font-bold text-red-700">当前激活报警</div>
+                    <div class="text-sm text-red-600" id="video-active-alert-summary-text">暂无报警</div>
+                  </div>
+                  <span id="video-active-alert-count-badge" class="stat-badge bg-red-100 text-red-600">0 项</span>
+                </div>
+                <div id="video-active-alert-list" class="space-y-2"></div>
+              </div>
+              <div id="video-results-empty" class="text-center py-8">
+                <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                  </svg>
+                </div>
+                <p class="text-gray-500">上传视频</p>
+                <p class="text-gray-500">检测结果将显示在这里</p>
+              </div>
+              <div id="video-results-list" class="space-y-3 hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const VIDEO_TASK_STORAGE_KEY = 'ecoscout.videoTaskState.v1';
+const VIDEO_TASK_TTL_MS = 24 * 60 * 60 * 1000;
+
+let selectedFile = null;
+let cameraStream = null;
+let autoDetectInterval = null;
+let selectedVideo = null;
+let isDetectingVideo = false;
+let videoStartTime = null;
+let currentVideoTaskId = null;
+let videoPollTimeout = null;
+let videoPreviewObjectUrl = null;
+
+const classIconMap = {
+  0: '🗑️',
+  1: '⚠️',
+  2: '🧹',
+  3: '🔥',
+  4: '💨',
+  garbage_bin: '🗑️',
+  overflow: '⚠️',
+  garbage: '🧹',
+  fire: '🔥',
+  smoke: '💨'
+};
+
+function safeParseJson(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+function loadVideoRecoveryState() {
+  const state = safeParseJson(localStorage.getItem(VIDEO_TASK_STORAGE_KEY));
+  if (!state || typeof state !== 'object') return null;
+  const updatedAt = Number(state.updatedAt || 0);
+  if (!updatedAt || (Date.now() - updatedAt) > VIDEO_TASK_TTL_MS) {
+    localStorage.removeItem(VIDEO_TASK_STORAGE_KEY);
+    return null;
+  }
+  return state;
+}
+
+function saveVideoRecoveryState(partialState) {
+  const prev = loadVideoRecoveryState() || {};
+  const next = {
+    taskId: partialState.taskId ?? prev.taskId ?? null,
+    sourcePage: partialState.sourcePage ?? prev.sourcePage ?? 'detection',
+    status: partialState.status ?? prev.status ?? 'pending',
+    progress: Number(partialState.progress ?? prev.progress ?? 0),
+    message: partialState.message ?? prev.message ?? '',
+    startedAt: Number(partialState.startedAt ?? prev.startedAt ?? Date.now()),
+    lastResultVideo: partialState.lastResultVideo ?? prev.lastResultVideo ?? null,
+    lastStats: partialState.lastStats ?? prev.lastStats ?? null,
+    lastActiveAlerts: partialState.lastActiveAlerts ?? prev.lastActiveAlerts ?? [],
+    updatedAt: Date.now(),
+  };
+  localStorage.setItem(VIDEO_TASK_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+function clearStoredVideoRecoveryState() {
+  localStorage.removeItem(VIDEO_TASK_STORAGE_KEY);
+}
+
+function clearVideoPreviewObjectUrl() {
+  if (videoPreviewObjectUrl) {
+    URL.revokeObjectURL(videoPreviewObjectUrl);
+    videoPreviewObjectUrl = null;
+  }
+}
+
+function setVideoRestoreNote(message, tone = 'info') {
+  const note = document.getElementById('video-restore-note');
+  if (!message) {
+    note.classList.add('hidden');
+    note.textContent = '';
+    note.className = 'hidden mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700';
+    return;
+  }
+  const toneClassMap = {
+    info: 'mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700',
+    warn: 'mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700',
+    success: 'mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700',
+  };
+  note.className = toneClassMap[tone] || toneClassMap.info;
+  note.textContent = message;
+  note.classList.remove('hidden');
+}
+
+function toggleVideoClearStateButton(visible) {
+  document.getElementById('video-btn-clear-state').classList.toggle('hidden', !visible);
+}
+
+function setDetectionVideoPreviewSource(src, fromObjectUrl = false) {
+  const video = document.getElementById('video-player');
+  if (fromObjectUrl) {
+    clearVideoPreviewObjectUrl();
+    videoPreviewObjectUrl = src;
+  }
+  video.src = src;
+  video.classList.remove('hidden');
+  document.getElementById('video-placeholder').classList.add('hidden');
+}
+
+function showDetectionVideoRecoveryPlaceholder(message = '检测任务恢复中，原始上传文件无需重新选择。') {
+  const video = document.getElementById('video-player');
+  clearVideoPreviewObjectUrl();
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.classList.add('hidden');
+  const placeholder = document.getElementById('video-placeholder');
+  placeholder.classList.remove('hidden');
+  placeholder.innerHTML = `
+    <div class="text-center text-gray-400 px-6">
+      <svg class="w-16 h-16 mx-auto mb-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      <p class="text-white font-semibold mb-2">视频任务已恢复</p>
+      <p class="text-sm text-gray-400">${message}</p>
+    </div>
+  `;
+}
+
+function restoreDetectionVideoDefaultPlaceholder() {
+  document.getElementById('video-placeholder').innerHTML = `
+    <div class="text-center text-gray-500">
+      <svg class="w-16 h-16 mx-auto mb-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      <p>上传视频后可开始检测</p>
+    </div>
+  `;
+}
+
+function renderVideoActiveAlerts(task) {
+  const activeAlerts = Array.isArray(task.active_alerts) ? task.active_alerts : [];
+  const summary = document.getElementById('video-active-alert-summary');
+  const summaryText = document.getElementById('video-active-alert-summary-text');
+  const badge = document.getElementById('video-active-alert-count-badge');
+  const list = document.getElementById('video-active-alert-list');
+
+  if (!activeAlerts.length) {
+    summary.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  summary.classList.remove('hidden');
+  const highest = task.highest_priority_alert || activeAlerts[0].class_name || '未知事件';
+  const newCount = Number(task.new_alert_count || 0);
+  const sustainedCount = Number(task.sustained_alert_count || 0);
+  const endedCount = Number(task.ended_alert_count || 0);
+  summaryText.textContent = `最高优先级：${highest} · 新增 ${newCount} · 持续 ${sustainedCount} · 结束 ${endedCount}`;
+  badge.textContent = `${activeAlerts.length} 项`;
+  list.innerHTML = activeAlerts.map((item, index) => `
+    <div class="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
+      <div>
+        <div class="text-sm font-medium text-gray-800">${index + 1}. ${item.class_name || '未知事件'}</div>
+        <div class="text-xs text-gray-500">${item.confirmation_mode || '策略默认'} · 持续 ${Number(item.duration_seconds || 0).toFixed(1)}s</div>
+      </div>
+      <span class="stat-badge ${item.state === 'new' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}">
+        ${item.state === 'new' ? '新触发' : '持续提示'}
+      </span>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab) {
+  ['upload', 'camera', 'video'].forEach((name) => {
+    const tabEl = document.getElementById(`tab-${name}`);
+    const contentEl = document.getElementById(`content-${name}`);
+    tabEl.classList.remove('text-emerald-600', 'border-emerald-500');
+    tabEl.classList.add('text-gray-500', 'border-transparent');
+    contentEl.classList.add('hidden');
+  });
+
+  const activeTab = document.getElementById(`tab-${tab}`);
+  const activeContent = document.getElementById(`content-${tab}`);
+  activeTab.classList.remove('text-gray-500', 'border-transparent');
+  activeTab.classList.add('text-emerald-600', 'border-emerald-500');
+  activeContent.classList.remove('hidden');
+
+  if (tab === 'video') {
+    stopAutoDetect();
+    document.getElementById('result-image').classList.add('hidden');
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('right-panel-image').classList.add('hidden');
+    document.getElementById('right-panel-video').classList.remove('hidden');
+    const recoveryState = loadVideoRecoveryState();
+    if (recoveryState && recoveryState.taskId) {
+      toggleVideoClearStateButton(true);
+    }
+  } else {
+    if (tab !== 'camera') {
+      stopAutoDetect();
+    }
+    document.getElementById('right-panel-video').classList.add('hidden');
+    document.getElementById('right-panel-image').classList.remove('hidden');
+  }
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  selectedFile = file;
+  switchTab('upload');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('upload-placeholder').classList.add('hidden');
+    document.getElementById('image-preview').classList.remove('hidden');
+    document.getElementById('upload-zone').classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  selectedFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('upload-placeholder').classList.remove('hidden');
+  document.getElementById('image-preview').classList.add('hidden');
+  document.getElementById('upload-zone').classList.remove('has-image');
+  document.getElementById('result-image').classList.add('hidden');
+  document.getElementById('result-empty').classList.remove('hidden');
+  document.getElementById('result-list').classList.add('hidden');
+  document.getElementById('scene-status').classList.add('hidden');
+  document.getElementById('btn-detect').disabled = false;
+  document.getElementById('loading-state').classList.add('hidden');
+}
+
+function setLoading(on) {
+  document.getElementById('btn-detect').disabled = on;
+  document.getElementById('loading-state').classList.toggle('hidden', !on);
+}
+
+async function detectImage() {
+  if (!selectedFile) {
+    alert('请先选择图片');
+    return;
+  }
+
+  setLoading(true);
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  try {
+    const response = await fetch(`/api/detect/image?t=${Date.now()}`, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+      body: formData
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) {
+      throw new Error(data.error || '检测失败');
+    }
+
+    displayResults(data);
+  } catch (error) {
+    console.error('图片检测失败:', error);
+    alert(`图片检测失败: ${error.message || '未知错误'}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function detectBase64(imageData) {
+  setLoading(true);
+
+  try {
+    const response = await fetch(`/api/detect/base64?t=${Date.now()}`, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageData })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) {
+      throw new Error(data.error || '检测失败');
+    }
+
+    displayResults(data);
+  } catch (error) {
+    console.error('摄像头检测失败:', error);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function displayResults(data) {
+  document.getElementById('right-panel-video').classList.add('hidden');
+  document.getElementById('right-panel-image').classList.remove('hidden');
+
+  if (data.success && data.result_image) {
+    document.getElementById('result-img').src = `data:image/jpeg;base64,${data.result_image}`;
+    document.getElementById('result-image').classList.remove('hidden');
+  }
+
+  const detections = Array.isArray(data.detections) ? data.detections : [];
+  if (!detections.length) {
+    document.getElementById('result-empty').classList.remove('hidden');
+    document.getElementById('result-list').classList.add('hidden');
+  } else {
+    document.getElementById('result-empty').classList.add('hidden');
+    document.getElementById('result-list').classList.remove('hidden');
+    document.getElementById('result-list').innerHTML = detections.map((d) => createResultCard(d)).join('');
+  }
+
+  const scene = data.scene || null;
+  if (!scene) {
+    document.getElementById('scene-status').classList.add('hidden');
+    return;
+  }
+
+  const statusEl = document.getElementById('scene-status');
+  statusEl.classList.remove('hidden');
+
+  if ((scene.alert_count || 0) > 0) {
+    statusEl.className = 'mt-6 p-4 rounded-xl border-2 border-red-200 bg-red-50';
+    statusEl.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center pulse-animation">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="font-bold text-red-700">检测到异常</div>
+          <div class="text-sm text-red-600">${(scene.alert_types || []).join('、') || '请及时处理'}</div>
+        </div>
+      </div>
+    `;
+  } else {
+    statusEl.className = 'mt-6 p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50';
+    statusEl.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div>
+          <div class="font-bold text-emerald-700">检测正常</div>
+          <div class="text-sm text-emerald-600">未发现异常</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function createResultCard(detection) {
+  const isAlert = Boolean(detection.alert);
+  const bgColor = isAlert ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100';
+  const badgeClass = isAlert ? 'badge-danger' : 'badge-success';
+  const badgeText = isAlert ? '预警' : '正常';
+  const confidenceColor = isAlert ? 'bg-red-500' : 'bg-emerald-500';
+  const icon = classIconMap[detection.class_id] || classIconMap[detection.class_name] || '📌';
+
+  return `
+    <div class="result-card p-4 rounded-xl ${bgColor} border fade-in">
+      <div class="flex items-start gap-4">
+        <div class="text-3xl">${icon}</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-gray-800">${detection.class_name || `类别 ${detection.class_id}`}</span>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm text-gray-500">置信度</span>
+            <div class="confidence-bar flex-1">
+              <div class="confidence-fill ${confidenceColor}" style="width: ${(Number(detection.confidence || 0) * 100).toFixed(1)}%"></div>
+            </div>
+            <span class="text-sm font-semibold text-gray-700">${(Number(detection.confidence || 0) * 100).toFixed(1)}%</span>
+          </div>
+          ${Array.isArray(detection.bbox) ? `<div class="text-xs text-gray-400">位置: [${detection.bbox.join(', ')}]</div>` : ''}
+          ${(detection.source || detection.source_model) ? `<div class="text-xs text-gray-400">来源: ${detection.source || detection.source_model}</div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function toggleCamera() {
+  const video = document.getElementById('camera-video');
+  const btn = document.getElementById('btn-camera');
+
+  if (cameraStream) {
+    stopCameraStream();
+    btn.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      启动摄像头
+    `;
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = cameraStream;
+    document.getElementById('camera-placeholder').classList.add('hidden');
+    btn.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+      </svg>
+      关闭摄像头
+    `;
+  } catch (error) {
+    alert('无法访问摄像头，请检查浏览器权限');
+  }
+}
+
+function stopCameraStream() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+
+  const video = document.getElementById('camera-video');
+  video.srcObject = null;
+  document.getElementById('camera-placeholder').classList.remove('hidden');
+  stopAutoDetect();
+}
+
+function toggleAutoDetect() {
+  const toggle = document.getElementById('auto-toggle');
+  toggle.classList.toggle('active');
+
+  if (toggle.classList.contains('active')) {
+    startAutoDetect();
+  } else {
+    stopAutoDetect();
+  }
+}
+
+function startAutoDetect() {
+  if (!cameraStream) {
+    const toggle = document.getElementById('auto-toggle');
+    toggle.classList.remove('active');
+    alert('请先启动摄像头');
+    return;
+  }
+
+  if (autoDetectInterval) {
+    return;
+  }
+
+  autoDetectInterval = setInterval(() => {
+    captureAndDetect();
+  }, 1000);
+}
+
+function stopAutoDetect() {
+  if (!autoDetectInterval) {
+    return;
+  }
+  clearInterval(autoDetectInterval);
+  autoDetectInterval = null;
+}
+
+function captureAndDetect() {
+  if (!cameraStream) {
+    alert('请先启动摄像头');
+    return;
+  }
+
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const imageData = canvas.toDataURL('image/jpeg', 0.85);
+  detectBase64(imageData);
+}
+
+function handleVideoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+  switchTab('video');
+  selectedVideo = file;
+  clearStoredVideoRecoveryState();
+  setVideoRestoreNote('');
+  document.getElementById('video-upload-placeholder').classList.add('hidden');
+  document.getElementById('video-file-info').classList.remove('hidden');
+  document.getElementById('video-file-name').textContent = file.name;
+  document.getElementById('video-file-size').textContent = formatFileSize(file.size);
+
+  const objectUrl = URL.createObjectURL(file);
+  setDetectionVideoPreviewSource(objectUrl, true);
+  resetVideoStats({ preserveRecoveryState: false, preserveSelection: true });
+}
+
+function removeVideo() {
+  if (isDetectingVideo) {
+    stopVideoDetection();
+  }
+
+  selectedVideo = null;
+  document.getElementById('video-input').value = '';
+  document.getElementById('video-upload-placeholder').classList.remove('hidden');
+  document.getElementById('video-file-info').classList.add('hidden');
+  const video = document.getElementById('video-player');
+  clearVideoPreviewObjectUrl();
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.classList.add('hidden');
+  document.getElementById('video-placeholder').classList.remove('hidden');
+  restoreDetectionVideoDefaultPlaceholder();
+  resetVideoStats({ preserveRecoveryState: false, preserveSelection: false });
+  clearStoredVideoRecoveryState();
+  toggleVideoClearStateButton(false);
+  setVideoRestoreNote('');
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function startVideoDetection() {
+  if (!selectedVideo) {
+    alert('请先选择视频文件');
+    return;
+  }
+  if (isDetectingVideo) {
+    return;
+  }
+
+  isDetectingVideo = true;
+  videoStartTime = Date.now();
+
+  document.getElementById('video-btn-start').classList.add('hidden');
+  document.getElementById('video-btn-stop').classList.remove('hidden');
+  document.getElementById('video-processing').classList.remove('hidden');
+  document.getElementById('video-progress-section').classList.remove('hidden');
+  document.getElementById('video-results-empty').classList.add('hidden');
+  document.getElementById('video-results-list').classList.remove('hidden');
+  document.getElementById('video-results-list').innerHTML = '';
+  toggleVideoClearStateButton(true);
+  setVideoRestoreNote('视频任务已提交，离开页面后返回仍可继续查看进度。', 'info');
+
+  const formData = new FormData();
+  formData.append('file', selectedVideo);
+  formData.append('skip_frames', '1');
+
+  try {
+    const submitResp = await fetch(`/api/detect/video?t=${Date.now()}`, {
+      method: 'POST',
+      cache: 'no-store',
+      body: formData,
+    });
+    const submitData = await submitResp.json().catch(() => ({}));
+    if (!submitResp.ok || !submitData.success || !submitData.task_id) {
+      throw new Error(submitData.detail || submitData.error || submitData.message || '视频任务提交失败');
+    }
+    currentVideoTaskId = String(submitData.task_id);
+    saveVideoRecoveryState({
+      taskId: currentVideoTaskId,
+      sourcePage: 'detection',
+      status: submitData.status || 'pending',
+      progress: 0,
+      message: submitData.message || '任务已提交',
+      startedAt: videoStartTime,
+      lastResultVideo: null,
+      lastStats: null,
+      lastActiveAlerts: [],
+    });
+
+    await pollVideoTaskStatus(currentVideoTaskId);
+  } catch (error) {
+    console.error('视频检测失败:', error);
+    addVideoResult({
+      class_id: 'warning',
+      class_name: `任务失败: ${error.message || '未知错误'}`,
+      confidence: 1,
+      is_alert: true,
+      frame: '-',
+    });
+    alert(`视频检测失败: ${error.message || '未知错误'}`);
+    clearStoredVideoRecoveryState();
+    finalizeVideoDetectionUi();
+  }
+}
+
+async function pollVideoTaskStatus(taskId) {
+  currentVideoTaskId = String(taskId);
+  if (videoPollTimeout) clearTimeout(videoPollTimeout);
+
+  const loop = async () => {
+    if (!isDetectingVideo || !currentVideoTaskId) return;
+
+    const response = await fetch(`/api/tasks/${encodeURIComponent(currentVideoTaskId)}?t=${Date.now()}`, { cache: 'no-store' });
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 404) {
+      clearStoredVideoRecoveryState();
+      throw new Error('任务不存在或已过期');
+    }
+    if (!response.ok) {
+      throw new Error(result.detail || result.error || result.message || '任务状态查询失败');
+    }
+
+    const progress = Math.max(0, Math.min(100, Number(result.progress || 0)));
+    document.getElementById('video-progress-percent').textContent = `${progress}%`;
+    document.getElementById('video-progress-bar').style.width = `${progress}%`;
+    document.getElementById('video-progress-text').textContent = result.message || `处理中 ${progress}%`;
+    document.getElementById('video-processing-text').textContent = result.message || '处理中...';
+    renderVideoActiveAlerts(result);
+
+    if (videoStartTime) {
+      const elapsed = Math.floor((Date.now() - videoStartTime) / 1000);
+      document.getElementById('video-stat-duration').textContent = `${elapsed}s`;
+    }
+
+    saveVideoRecoveryState({
+      taskId: currentVideoTaskId,
+      sourcePage: 'detection',
+      status: result.status,
+      progress: result.progress,
+      message: result.message || '',
+      startedAt: videoStartTime || Date.now(),
+      lastResultVideo: result.result_video || null,
+      lastStats: result.stats || null,
+      lastActiveAlerts: result.active_alerts || [],
+    });
+
+    if (result.status === 'completed') {
+      applyCompletedVideoResult(result);
+      finalizeVideoDetectionUi(true, { clearTaskId: false, keepProgress: true });
+      setVideoRestoreNote('已恢复最近一次完成的视频检测结果。', 'success');
+      return;
+    }
+    if (result.status === 'failed') {
+      clearStoredVideoRecoveryState();
+      throw new Error(result.message || '视频处理失败');
+    }
+
+    videoPollTimeout = setTimeout(loop, 1200);
+  };
+
+  try {
+    await loop();
+  } catch (error) {
+    console.error('视频检测失败:', error);
+    addVideoResult({
+      class_id: 'warning',
+      class_name: `任务失败: ${error.message || '未知错误'}`,
+      confidence: 1,
+      is_alert: true,
+      frame: '-',
+    });
+    alert(`视频检测失败: ${error.message || '未知错误'}`);
+    clearStoredVideoRecoveryState();
+    finalizeVideoDetectionUi();
+  }
+}
+
+function applyCompletedVideoResult(result) {
+  const stats = result.stats || {};
+  document.getElementById('video-stat-frames').textContent = String(stats.total_frames || 0);
+  document.getElementById('video-stat-detected').textContent = String(stats.total_detections || 0);
+  document.getElementById('video-stat-alerts').textContent = String(stats.total_alerts || 0);
+  renderVideoActiveAlerts({
+    active_alerts: stats.active_alerts || [],
+    highest_priority_alert: stats.highest_priority_alert,
+    new_alert_count: stats.new_alert_count || 0,
+    sustained_alert_count: stats.sustained_alert_count || 0,
+    ended_alert_count: stats.ended_alert_count || 0,
+  });
+
+  document.getElementById('video-progress-percent').textContent = '100%';
+  document.getElementById('video-progress-bar').style.width = '100%';
+  document.getElementById('video-progress-text').textContent = '处理完成';
+  document.getElementById('video-processing-text').textContent = '处理完成';
+
+  if (result.result_video) {
+    const videoPlayer = document.getElementById('video-player');
+    setDetectionVideoPreviewSource(`/uploads/${result.result_video}`);
+    videoPlayer.play().catch(() => {
+      // Ignore autoplay blocks by browser policy.
+    });
+  } else {
+    showDetectionVideoRecoveryPlaceholder('任务已完成，但当前没有可播放的结果视频。');
+  }
+
+  const alertTypeMap = {
+    overflow: { key: 'overflow', label: '垃圾溢出' },
+    garbage: { key: 'garbage', label: '散落垃圾' },
+    fire: { key: 'fire', label: '火焰' },
+    smoke: { key: 'smoke', label: '烟雾' },
+    video_alert: { key: 'warning', label: '视频预警' },
+    垃圾溢出: { key: 'overflow', label: '垃圾溢出' },
+    散落垃圾: { key: 'garbage', label: '散落垃圾' },
+    火焰: { key: 'fire', label: '火焰' },
+    烟雾: { key: 'smoke', label: '烟雾' },
+    视频预警: { key: 'warning', label: '视频预警' },
+  };
+  const rawTypes = Array.isArray(stats.alert_types) ? stats.alert_types : [];
+  const normalized = rawTypes
+    .map((t) => alertTypeMap[String(t)] || { key: 'warning', label: String(t) })
+    .filter((item) => item.label && item.label !== 'normal');
+  const uniqueLabels = [...new Set(normalized.map((item) => item.label))];
+  const primaryKey = normalized.length === 1 ? normalized[0].key : 'warning';
+  const reasonText = uniqueLabels.length > 0 ? uniqueLabels.join('、') : '历史任务未记录类型';
+
+  addVideoResult({
+    class_id: stats.total_alerts > 0 ? primaryKey : 'normal',
+    class_name: stats.total_alerts > 0 ? `检测到异常：${reasonText}` : '检测完成，未发现异常',
+    confidence: 1,
+    is_alert: stats.total_alerts > 0,
+    frame: `${stats.total_frames || 0}`,
+  });
+}
+
+function stopVideoDetection() {
+  if (!isDetectingVideo) {
+    return;
+  }
+  isDetectingVideo = false;
+  if (videoPollTimeout) clearTimeout(videoPollTimeout);
+  videoPollTimeout = null;
+  finalizeVideoDetectionUi(false, { clearTaskId: false, keepProgress: true });
+  document.getElementById('video-processing-text').textContent = '已停止前端轮询，后台任务可能仍在继续';
+  setVideoRestoreNote('已停止当前页面轮询，后台任务可能仍在继续，可稍后返回恢复。', 'warn');
+}
+
+function finalizeVideoDetectionUi(completed = false, options = {}) {
+  const { clearTaskId = true, keepProgress = completed } = options;
+  isDetectingVideo = false;
+  if (clearTaskId) {
+    currentVideoTaskId = null;
+  }
+  if (videoPollTimeout) clearTimeout(videoPollTimeout);
+  videoPollTimeout = null;
+
+  const video = document.getElementById('video-player');
+  if (!completed) {
+    video.pause();
+  }
+
+  document.getElementById('video-btn-start').classList.remove('hidden');
+  document.getElementById('video-btn-stop').classList.add('hidden');
+  document.getElementById('video-processing').classList.add('hidden');
+  if (!keepProgress) {
+    document.getElementById('video-progress-section').classList.add('hidden');
+  }
+}
+
+function resetVideoStats(options = {}) {
+  const { preserveRecoveryState = false, preserveSelection = false } = options;
+  document.getElementById('video-stat-frames').textContent = '0';
+  document.getElementById('video-stat-detected').textContent = '0';
+  document.getElementById('video-stat-alerts').textContent = '0';
+  document.getElementById('video-stat-duration').textContent = '0s';
+  document.getElementById('video-progress-percent').textContent = '0%';
+  document.getElementById('video-progress-bar').style.width = '0%';
+  document.getElementById('video-progress-text').textContent = '已处理 0 / 0 帧';
+  document.getElementById('video-results-list').innerHTML = '';
+  document.getElementById('video-results-empty').classList.remove('hidden');
+  document.getElementById('video-results-list').classList.add('hidden');
+  document.getElementById('video-active-alert-summary').classList.add('hidden');
+  document.getElementById('video-active-alert-list').innerHTML = '';
+  document.getElementById('video-processing-text').textContent = '准备中...';
+  if (videoPollTimeout) clearTimeout(videoPollTimeout);
+  videoPollTimeout = null;
+  currentVideoTaskId = null;
+  videoStartTime = null;
+  toggleVideoClearStateButton(false);
+  setVideoRestoreNote('');
+  if (!preserveRecoveryState) {
+    clearStoredVideoRecoveryState();
+  }
+  if (!preserveSelection) {
+    selectedVideo = null;
+  }
+}
+
+function addVideoResult(result) {
+  const list = document.getElementById('video-results-list');
+  document.getElementById('video-results-empty').classList.add('hidden');
+  document.getElementById('video-results-list').classList.remove('hidden');
+
+  const typeConfig = {
+    garbage_bin: { icon: '🗑️' },
+    overflow: { icon: '⚠️' },
+    garbage: { icon: '🧹' },
+    fire: { icon: '🔥' },
+    smoke: { icon: '💨' },
+    warning: { icon: '⚠️' },
+    normal: { icon: '✅' },
+  };
+
+  const config = typeConfig[result.class_id] || { icon: '📌' };
+  const isWarning = Boolean(result.is_alert);
+  const confidenceText = `${((result.confidence || 0) * 100).toFixed(1)}%`;
+
+  const html = `
+    <div class="result-item p-3 rounded-xl ${isWarning ? 'bg-red-50 border border-red-100' : 'bg-emerald-50 border border-emerald-100'}">
+      <div class="flex items-center gap-3">
+        <div class="text-2xl">${config.icon}</div>
+        <div class="flex-1">
+          <div class="font-medium text-gray-800">${result.class_name || '检测结果'}</div>
+          <div class="text-xs text-gray-500">帧: ${result.frame || '-'} · 置信度: ${confidenceText}</div>
+        </div>
+        <span class="stat-badge ${isWarning ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">
+          ${isWarning ? '预警' : '正常'}
+        </span>
+      </div>
+    </div>
+  `;
+
+  list.insertAdjacentHTML('afterbegin', html);
+  while (list.children.length > 20) {
+    list.removeChild(list.lastChild);
+  }
+}
+
+function restoreVideoTaskFromState(task) {
+  switchTab('video');
+  currentVideoTaskId = task.taskId || null;
+  videoStartTime = Number(task.startedAt || Date.now());
+  document.getElementById('video-progress-section').classList.remove('hidden');
+  document.getElementById('video-results-empty').classList.add('hidden');
+  document.getElementById('video-results-list').classList.remove('hidden');
+  toggleVideoClearStateButton(true);
+
+  if (task.status === 'completed' && task.lastResultVideo) {
+    document.getElementById('video-upload-placeholder').classList.add('hidden');
+    document.getElementById('video-file-info').classList.remove('hidden');
+    document.getElementById('video-file-name').textContent = '最近一次完成的视频任务';
+    document.getElementById('video-file-size').textContent = '恢复结果';
+    applyCompletedVideoResult({
+      result_video: task.lastResultVideo,
+      stats: task.lastStats || {},
+      active_alerts: task.lastActiveAlerts || [],
+    });
+    finalizeVideoDetectionUi(true, { clearTaskId: false, keepProgress: true });
+    setVideoRestoreNote('已恢复最近一次完成的视频检测结果。', 'success');
+    return;
+  }
+
+  document.getElementById('video-upload-placeholder').classList.add('hidden');
+  document.getElementById('video-file-info').classList.remove('hidden');
+  document.getElementById('video-file-name').textContent = '恢复中的视频任务';
+  document.getElementById('video-file-size').textContent = '原文件无需重新上传';
+  showDetectionVideoRecoveryPlaceholder();
+  isDetectingVideo = true;
+  document.getElementById('video-btn-start').classList.add('hidden');
+  document.getElementById('video-btn-stop').classList.remove('hidden');
+  document.getElementById('video-processing').classList.remove('hidden');
+  document.getElementById('video-progress-percent').textContent = `${Number(task.progress || 0)}%`;
+  document.getElementById('video-progress-bar').style.width = `${Number(task.progress || 0)}%`;
+  document.getElementById('video-progress-text').textContent = task.message || '任务恢复中...';
+  document.getElementById('video-processing-text').textContent = task.message || '任务恢复中...';
+  renderVideoActiveAlerts({
+    active_alerts: task.lastActiveAlerts || [],
+    highest_priority_alert: (task.lastActiveAlerts || [])[0]?.class_name || null,
+    new_alert_count: 0,
+    sustained_alert_count: 0,
+    ended_alert_count: 0,
+  });
+  setVideoRestoreNote('已恢复后台视频任务进度，正在继续获取最新状态。', 'info');
+  pollVideoTaskStatus(task.taskId);
+}
+
+function restoreVideoRecoveryStateIfNeeded() {
+  const state = loadVideoRecoveryState();
+  if (!state || !state.taskId) return;
+  restoreVideoTaskFromState(state);
+}
+
+function clearVideoRecoveryState() {
+  clearStoredVideoRecoveryState();
+  removeVideo();
+  setVideoRestoreNote('已清除本地视频恢复状态。', 'success');
+}
+
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    document.getElementById('file-input').files = e.dataTransfer.files;
+    handleFileSelect({ target: { files: [file] } });
+  }
+});
+
+const videoUploadZone = document.getElementById('video-upload-zone');
+videoUploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  videoUploadZone.classList.add('dragover');
+});
+videoUploadZone.addEventListener('dragleave', () => {
+  videoUploadZone.classList.remove('dragover');
+});
+videoUploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  videoUploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('video/')) {
+    document.getElementById('video-input').files = e.dataTransfer.files;
+    handleVideoSelect({ target: { files: [file] } });
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  stopCameraStream();
+  isDetectingVideo = false;
+  if (videoPollTimeout) clearTimeout(videoPollTimeout);
+});
+
+window.addEventListener('storage', (event) => {
+  if (event.key !== VIDEO_TASK_STORAGE_KEY) return;
+  const state = loadVideoRecoveryState();
+  if (!state) return;
+  if (!currentVideoTaskId || currentVideoTaskId !== state.taskId) {
+    restoreVideoTaskFromState(state);
+  }
+});
+
+restoreVideoRecoveryStateIfNeeded();
+</script>
+
+</body>
+</html>

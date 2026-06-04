@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据集说明 - 社区垃圾与火情识别预警系统</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; }
+
+.gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes growBar {
+  from { width: 0; }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.progress-bar {
+  animation: growBar 1s ease-out forwards;
+}
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #10b981;
+  transition: all 0.3s;
+  transform: translateX(-50%);
+}
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+
+.code-block {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  overflow-x: auto;
+}
+
+.code-keyword { color: #c084fc; }
+.code-string { color: #86efac; }
+.code-comment { color: #64748b; }
+.code-number { color: #fbbf24; }
+.code-function { color: #60a5fa; }
+
+.step-card {
+  position: relative;
+}
+.step-card::before {
+  content: attr(data-step);
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.model-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2"><span class="text-xl font-bold">社区垃圾与火情<span class="gradient-text">识别预警系统</span></span></a>
+    
+    <div class="flex items-center gap-1">
+      <a href="/" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">首页</a>
+      <a href="/detection" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">智慧检测</a>
+      <a href="/alerts" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">预警记录</a>
+      <a href="/statistics" class="nav-link px-4 py-2 text-sm font-medium text-gray-500 hover:text-emerald-600 rounded-lg">数据统计</a>
+      <a href="/dataset" class="nav-link active px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 rounded-lg">数据集</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="pt-24 pb-16 cyber-grid min-h-screen">
+  <div class="max-w-5xl mx-auto px-6">
+    <!-- Header -->
+    <div class="text-center mb-12 fade-in">
+      <h1 class="text-4xl font-bold text-gray-800 mb-4">数据集说明</h1>
+      <p class="text-xl text-gray-500">了解模型训练数据和类别定义</p>
+    </div>
+    
+    <!-- Dataset Stats -->
+    <div class="grid grid-cols-4 gap-6 mb-12 fade-in">
+      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
+        <div class="text-4xl font-extrabold text-emerald-600 mb-2">5,280</div>
+        <div class="text-sm text-gray-500">图片总数</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
+        <div class="text-4xl font-extrabold text-blue-600 mb-2">18,640</div>
+        <div class="text-sm text-gray-500">标注框数量</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
+        <div class="text-4xl font-extrabold text-purple-600 mb-2">5</div>
+        <div class="text-sm text-gray-500">类别数量</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
+        <div class="text-4xl font-extrabold text-amber-600 mb-2">98.7%</div>
+        <div class="text-sm text-gray-500">模型准确率</div>
+      </div>
+    </div>
+    
+    <!-- Class Distribution -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 mb-8 fade-in">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        类别分布
+      </h2>
+      
+      <div class="space-y-6">
+        <div class="flex items-center gap-4">
+          <div class="w-32 flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-emerald-500"></div>
+            <span class="text-sm font-medium text-gray-700">垃圾桶</span>
+          </div>
+          <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center justify-end pr-4" style="width: 45%;">
+              <span class="text-white text-sm font-bold">45%</span>
+            </div>
+          </div>
+          <span class="w-20 text-right text-sm text-gray-500">2,376 张</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="w-32 flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-amber-500"></div>
+            <span class="text-sm font-medium text-gray-700">垃圾溢出</span>
+          </div>
+          <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full flex items-center justify-end pr-4" style="width: 25%;">
+              <span class="text-white text-sm font-bold">25%</span>
+            </div>
+          </div>
+          <span class="w-20 text-right text-sm text-gray-500">1,320 张</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="w-32 flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-red-500"></div>
+            <span class="text-sm font-medium text-gray-700">散落垃圾</span>
+          </div>
+          <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-red-400 to-red-500 rounded-full flex items-center justify-end pr-4" style="width: 15%;">
+              <span class="text-white text-sm font-bold">15%</span>
+            </div>
+          </div>
+          <span class="w-20 text-right text-sm text-gray-500">792 张</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="w-32 flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-orange-500"></div>
+            <span class="text-sm font-medium text-gray-700">火焰</span>
+          </div>
+          <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full flex items-center justify-end pr-4" style="width: 8%;">
+              <span class="text-white text-sm font-bold">8%</span>
+            </div>
+          </div>
+          <span class="w-20 text-right text-sm text-gray-500">422 张</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="w-32 flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-gray-500"></div>
+            <span class="text-sm font-medium text-gray-700">烟雾</span>
+          </div>
+          <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-end pr-4" style="width: 7%;">
+              <span class="text-white text-sm font-bold">7%</span>
+            </div>
+          </div>
+          <span class="w-20 text-right text-sm text-gray-500">370 张</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Class Definitions -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 mb-8 fade-in">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        类别定义
+      </h2>
+      
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card-hover p-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl">🗑️</div>
+            <div>
+              <h3 class="font-bold text-gray-800">垃圾桶 (garbage_bin)</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">ID: 0</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">正常状态下的垃圾桶，用于定位和计数</p>
+          <div class="flex gap-2">
+            <span class="text-xs px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700">不触发预警</span>
+            <span class="text-xs px-2 py-1 rounded-lg bg-blue-100 text-blue-700">基础类别</span>
+          </div>
+        </div>
+        
+        <div class="card-hover p-5 rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-2xl">⚠️</div>
+            <div>
+              <h3 class="font-bold text-gray-800">垃圾溢出 (overflow)</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">ID: 1</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">垃圾桶内垃圾溢出到外部区域，需要及时清理</p>
+          <div class="flex gap-2">
+            <span class="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700">触发预警</span>
+            <span class="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-700">警告级别</span>
+          </div>
+        </div>
+        
+        <div class="card-hover p-5 rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-2xl">🗑️</div>
+            <div>
+              <h3 class="font-bold text-gray-800">散落垃圾 (garbage)</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">ID: 2</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">地面上散落的垃圾物品，需要清理</p>
+          <div class="flex gap-2">
+            <span class="text-xs px-2 py-1 rounded-lg bg-orange-100 text-orange-700">触发预警</span>
+            <span class="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-700">警告级别</span>
+          </div>
+        </div>
+        
+        <div class="card-hover p-5 rounded-2xl border border-red-300 bg-gradient-to-br from-red-100 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-2xl">🔥</div>
+            <div>
+              <h3 class="font-bold text-gray-800">火焰 (fire)</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-red-200 text-red-800">ID: 3</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">检测到火焰，及时处理避免火灾</p>
+          <div class="flex gap-2">
+            <span class="text-xs px-2 py-1 rounded-lg bg-red-200 text-red-800">紧急预警</span>
+            <span class="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700">危险级别</span>
+          </div>
+        </div>
+        
+        <div class="card-hover p-5 rounded-2xl border border-gray-300 bg-gradient-to-br from-gray-100 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-2xl">💨</div>
+            <div>
+              <h3 class="font-bold text-gray-800">烟雾 (smoke)</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-gray-300 text-gray-700">ID: 4</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">检测到烟雾，可能存在火灾隐患</p>
+          <div class="flex gap-2">
+            <span class="text-xs px-2 py-1 rounded-lg bg-gray-300 text-gray-800">紧急预警</span>
+            <span class="text-xs px-2 py-1 rounded-lg bg-gray-200 text-gray-700">危险级别</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Model Info -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 mb-8 fade-in">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        模型信息
+      </h2>
+      
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="model-card rounded-2xl p-6 text-center">
+          <div class="text-4xl mb-3">🗑️</div>
+          <h3 class="font-bold text-gray-800 mb-2">垃圾分类模型</h3>
+          <div class="text-sm text-gray-500 mb-3">garbage_yolov8.pt</div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-emerald-600">6.0 MB</div>
+              <div class="text-xs text-gray-400">模型大小</div>
+            </div>
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-blue-600">YOLOv8</div>
+              <div class="text-xs text-gray-400">算法框架</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="model-card rounded-2xl p-6 text-center">
+          <div class="text-4xl mb-3">🔥</div>
+          <h3 class="font-bold text-gray-800 mb-2">火焰检测模型</h3>
+          <div class="text-sm text-gray-500 mb-3">fire_yolov8.pt</div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-emerald-600">6.0 MB</div>
+              <div class="text-xs text-gray-400">模型大小</div>
+            </div>
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-blue-600">YOLOv8</div>
+              <div class="text-xs text-gray-400">算法框架</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="model-card rounded-2xl p-6 text-center">
+          <div class="text-4xl mb-3">💨</div>
+          <h3 class="font-bold text-gray-800 mb-2">烟雾检测模型</h3>
+          <div class="text-sm text-gray-500 mb-3">smoke_yolov8.pt</div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-emerald-600">6.0 MB</div>
+              <div class="text-xs text-gray-400">模型大小</div>
+            </div>
+            <div class="p-2 bg-white rounded-lg">
+              <div class="font-bold text-blue-600">YOLOv8</div>
+              <div class="text-xs text-gray-400">算法框架</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Start -->
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 fade-in">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        快速开始
+      </h2>
+      
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="step-card pl-12">
+          <h3 class="font-bold text-gray-800 mb-2">安装依赖</h3>
+          <div class="code-block">
+<span class="code-comment"># 安装 YOLOv8 框架</span>
+<span class="code-function">pip</span> install ultralytics
+
+<span class="code-comment"># 或使用 conda</span>
+<span class="code-function">conda</span> install -c pytorch \
+  pytorch torchvision
+          </div>
+        </div>
+        
+        <div class="step-card pl-12">
+          <h3 class="font-bold text-gray-800 mb-2">加载模型</h3>
+          <div class="code-block">
+<span class="code-keyword">from</span> ultralytics <span class="code-keyword">import</span> YOLO
+
+<span class="code-comment"># 加载垃圾分类模型</span>
+model = <span class="code-function">YOLO</span>(
+  <span class="code-string">'models/garbage_yolov8.pt'</span>
+)
+          </div>
+        </div>
+        
+        <div class="step-card pl-12">
+          <h3 class="font-bold text-gray-800 mb-2">进行检测</h3>
+          <div class="code-block">
+<span class="code-comment"># 检测图片</span>
+results = model(<span class="code-string">'image.jpg'</span>)
+
+<span class="code-comment"># 显示结果</span>
+results[<span class="code-number">0</span>].<span class="code-function">show</span>()
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-400 py-12 mt-16">
+  <div class="max-w-7xl mx-auto px-6 text-center">
+    <p class="text-sm">社区垃圾与火情识别预警系统 · 版本 v1.0 · 2024</p>
+  </div>
+</footer>
+
+</body>
+</html>
